@@ -1,5 +1,5 @@
 # read the nucleotide sequence a.k.a. gene 
-with open("D:/Диплом/Sequences/Positive influence/article codon opt of the adenoviral fiber/Fiber_OPT.fa", 'r') as file:
+with open("D:/Диплом/Sequences/Short/human il21 opt1.fa", 'r') as file:
     file.readline()
     lines = file.readlines()
 
@@ -8,6 +8,9 @@ sequence = "".join(lines)
 
 # remove any newline characters from the sequence
 sequence = sequence.replace("\n", "")
+
+# make letters BIG
+sequence = sequence.upper()
 
 # calculate the codon frecuency 
 def calc_codon_freq(sequence: str) -> dict: 
@@ -35,19 +38,18 @@ def calc_nucl_freq(sequence: str) -> dict:
 
 
 # calculate NORMALIZED codon frecuency 
-def calc_norm_codon_freq(sequence: str) -> dict: 
+def calc_norm_codon_freq(sequence: str) -> dict:
     norm_codon_frequency = {}
-    for i in range(0, len(sequence), 3):  # now step is 3 nucleotides, should it be 1?
+    total_codons = len(sequence) // 3  # Calculate the total number of codons in the sequence
+    
+    for i in range(0, len(sequence), 3):
         codon = sequence[i:i+3]
         if codon in norm_codon_frequency:
             norm_codon_frequency[codon] += 1
         else:
             norm_codon_frequency[codon] = 1
-            
-    # calculate the total number of codons in sequence 
-    total_codons = sum(norm_codon_frequency.values())
-
-    # calculate the frequency of each codon and store it in the dictionary
+    
+    # Calculate the frequency of each codon and divide by the total number of codons
     for codon in norm_codon_frequency:
         norm_codon_frequency[codon] /= total_codons
     
@@ -118,4 +120,3 @@ def count_codon_pair(sequence: str) -> dict:
         else:
             codon_pair_count[codon_pair] = 1
     return codon_pair_count
-
