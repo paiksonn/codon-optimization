@@ -1,25 +1,23 @@
 from collections import Counter
-from Bio.Seq import Seq
-from math import log
-from math import exp
 import sequence_preparations
+import codonpair
 
-sequence = sequence_preparations.sequence
-seq_len = len(sequence)
-codons = [sequence[i:i+3] for i in range(0, len(sequence), 3)]
+sequence = sequence_preparations.sequence  # read sequence from file
+seq_len = len(sequence)  # take its length
 
-codon_freq = sequence_preparations.calc_codon_freq(sequence)
-nucl_freq = sequence_preparations.calc_nucl_freq(sequence) 
+codons = [sequence[i:i+3] for i in range(0, len(sequence), 3)]  # make a list of codons in sequence
+codon_pairs = sequence_preparations.count_codon_pair(sequence)  # make a list of codon pairs and its quatity
 
-norm_codon_freq = sequence_preparations.calc_norm_codon_freq(sequence)
-norm_nucl_freq = sequence_preparations.calc_norm_nucl_freq(sequence)
+codon_freq = sequence_preparations.calc_codon_freq(sequence)  # calculate codon frequency
+nucl_freq = sequence_preparations.calc_nucl_freq(sequence)  # calculate nucleotide frequency
 
-positional_nucl_freq = sequence_preparations.calc_positional_nucl_freq(sequence)
-norm_positional_nucl_freq = sequence_preparations.calc_norm_positional_nucl_freq(sequence)
+norm_codon_freq = sequence_preparations.calc_norm_codon_freq(sequence)  # calculate normalized codon frequency
+norm_nucl_freq = sequence_preparations.calc_norm_nucl_freq(sequence)  # calculate normalized nucleotide frequency
 
-codon_pairs = sequence_preparations.count_codon_pair(sequence)
+positional_nucl_freq = sequence_preparations.calc_positional_nucl_freq(sequence)  # calculate nucleotide frequency depending on its position in codon
+norm_positional_nucl_freq = sequence_preparations.calc_norm_positional_nucl_freq(sequence)  # calculate normalized nucleotide frequency depending on its position in codon
 
-aa_table = {
+aa_table = {  # list of amino acids and codons which codes them 
     'F': ['TTT', 'TTC'],
     'L': ['TTA', 'TTG', 'CTT', 'CTC', 'CTA', 'CTG'],
     'I': ['ATT', 'ATC', 'ATA'],
@@ -42,24 +40,30 @@ aa_table = {
     'G': ['GGT', 'GGC', 'GGA', 'GGG']
 }
 
-codon_to_aa = {
+
+# its all in the func name, dude 
+def translate_codon(codon):
+    genetic_code = {
         'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
-        'TCT': 'S', 'TCC': 'S', 'TCA': 'S', 'TCG': 'S',
-        'TAT': 'Y', 'TAC': 'Y', 'TAA': '*', 'TAG': '*',
-        'TGT': 'C', 'TGC': 'C', 'TGA': '*', 'TGG': 'W',
         'CTT': 'L', 'CTC': 'L', 'CTA': 'L', 'CTG': 'L',
-        'CCT': 'P', 'CCC': 'P', 'CCA': 'P', 'CCG': 'P',
-        'CAT': 'H', 'CAC': 'H', 'CAA': 'Q', 'CAG': 'Q',
-        'CGT': 'R', 'CGC': 'R', 'CGA': 'R', 'CGG': 'R',
         'ATT': 'I', 'ATC': 'I', 'ATA': 'I', 'ATG': 'M',
-        'ACT': 'T', 'ACC': 'T', 'ACA': 'T', 'ACG': 'T',
-        'AAT': 'N', 'AAC': 'N', 'AAA': 'K', 'AAG': 'K',
-        'AGT': 'S', 'AGC': 'S', 'AGA': 'R', 'AGG': 'R',
         'GTT': 'V', 'GTC': 'V', 'GTA': 'V', 'GTG': 'V',
+        'TCT': 'S', 'TCC': 'S', 'TCA': 'S', 'TCG': 'S',
+        'CCT': 'P', 'CCC': 'P', 'CCA': 'P', 'CCG': 'P',
+        'ACT': 'T', 'ACC': 'T', 'ACA': 'T', 'ACG': 'T',
         'GCT': 'A', 'GCC': 'A', 'GCA': 'A', 'GCG': 'A',
+        'TAT': 'Y', 'TAC': 'Y', 'TAA': '*', 'TAG': '*',
+        'CAT': 'H', 'CAC': 'H', 'CAA': 'Q', 'CAG': 'Q',
+        'AAT': 'N', 'AAC': 'N', 'AAA': 'K', 'AAG': 'K',
         'GAT': 'D', 'GAC': 'D', 'GAA': 'E', 'GAG': 'E',
-        'GGT': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G',
+        'TGT': 'C', 'TGC': 'C', 'TGA': '*', 'TGG': 'W',
+        'CGT': 'R', 'CGC': 'R', 'CGA': 'R', 'CGG': 'R',
+        'AGT': 'S', 'AGC': 'S', 'AGA': 'R', 'AGG': 'R',
+        'GGT': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G'
     }
+
+    return genetic_code[codon]
+
 
 # Relative Codon Adaptation index (RCA)
 def RCA_calc(sequence: str, seq_len: int) -> float:
@@ -79,6 +83,9 @@ def RCA_calc(sequence: str, seq_len: int) -> float:
 # Relative Codon Bias Strength index (RCBS)
 def RCBS_calc(sequence: str, seq_len: int) -> float:
     RCBS = 1
+    tmp = 1
+    L = seq_len // 3  # Calculate the sequence length in codons
+    
     for l in range(0, seq_len, 3):
         codon = sequence[l:l+3]
         f = norm_codon_freq[codon]
@@ -86,9 +93,14 @@ def RCBS_calc(sequence: str, seq_len: int) -> float:
         f2 = norm_positional_nucl_freq[1][codon[1]]
         f3 = norm_positional_nucl_freq[2][codon[2]]
         RCBxyz = f / (f1 * f2 * f3)
-        RCBS *= RCBxyz ** (1 / (seq_len / 3))
+        tmp = RCBxyz ** (1 / L)
+        RCBS *= tmp
     
     return RCBS - 1
+
+
+# Codon Pair Strength/Codon Pair Bias (CPS/CPB)
+CPS = codonpair.CodonPair.from_named_reference('E. coli')
 
 
 # GC frequency 
@@ -101,99 +113,54 @@ def GC_freq_calc() -> float:
     return GC_freq * 100
 
 
-# RSCU
+# Relative Synonimouse Codon Usage (RSCU)
 def calculate_RSCU(codon_count):
-    total_count = sum(codon_count.values())
-    codon_RSCU = {}
+    # Calculate total counts of each amino acid
+    amino_acid_counts = {}
     for codon, count in codon_count.items():
-        expected_count = total_count / len(codon_count)
-        if expected_count == 0:
-            codon_RSCU[codon] = 0
-        else:
-            codon_RSCU[codon] = count / expected_count
-    return codon_RSCU
+        amino_acid = translate_codon(codon)
+        amino_acid_counts[amino_acid] = amino_acid_counts.get(amino_acid, 0) + count
 
+    # Calculate RSCU for each codon
+    rscu_values = {}
+    for codon, count in codon_count.items():
+        amino_acid = translate_codon(codon)
+        if amino_acid == '*':
+            expected_count = 0  # Set count to 0 for stop codons
+        else:
+            synonymous_codons = aa_table[amino_acid]
+            synonymous_count = sum(codon_count.get(c, 0) for c in synonymous_codons)
+            if synonymous_count == 0:
+                expected_count = 0  # Set count to 0 for synonymous codons with zero count
+            else:
+                expected_count = amino_acid_counts[amino_acid] / synonymous_count
+        
+        if expected_count == 0:
+            expected_count = 0.1
+            
+        rscu = count / expected_count
+
+        rscu_values[codon] = rscu
+
+    return rscu_values
 
 # Average ration of Relative Synonymouse Codon Usage (ARSCU)
 def ARSCU_calc(codons: list) -> float:
     codon_count = Counter(codons)
-    GC_codons = [codon for codon in codon_count if codon.endswith(('G', 'C'))]
-    AT_codons = [codon for codon in codon_count if codon.endswith(('A', 'T'))]
-    GC_RSCU = calculate_RSCU(Counter(GC_codons))
-    AT_RSCU = calculate_RSCU(Counter(AT_codons))
-    GC_ending_RSCU_sum = sum(GC_RSCU[codon] for codon in GC_codons)
-    AT_ending_RSCU_sum = sum(AT_RSCU[codon] for codon in AT_codons)
-    ARSCU = GC_ending_RSCU_sum / (AT_ending_RSCU_sum / len(AT_codons))
+    RSCU = calculate_RSCU(codon_count)
+    GC_codons = {key: value for key, value in RSCU.items() if key[-1] in ('G', 'C')}
+    AT_codons = {key: value for key, value in RSCU.items() if key[-1] in ('A', 'T')}
+    
+    GC_ending_RSCU_sum = sum(value for value in GC_codons.values())
+    AT_ending_RSCU_sum = sum(value for value in AT_codons.values())
+    ARSCU = GC_ending_RSCU_sum / (AT_ending_RSCU_sum / 18)
     return ARSCU
 
 
-# translate nucleotides to amino acids
-def count_amino_acids(seq: str, pseudocount: float = 0.1) -> dict:
-    codons = [seq[i:i+3] for i in range(0, len(seq), 3)]
-    aa_seq = ''.join([codon_to_aa[c] for c in codons])
-    aa_counts = {aa: aa_seq.count(aa) for aa in aa_table.keys()}
-    
-    # add pseudocount to each amino acid count
-    for aa in aa_counts:
-        aa_counts[aa] += pseudocount
-        
-    return aa_counts
-
-
-# Codon Pair Score (CPS)
-def CPS_calc(sequence: str, codon_pairs: dict, codon_freq: dict, codon_to_aa: dict) -> float:
-    # count amino acids
-    aa_counts = count_amino_acids(sequence)
-    
-    # calculate total number of codon pairs and amino acid pairs
-    total_codon_pairs = sum(codon_pairs.values())
-    total_aa_pairs = sum(aa_counts.values()) - 1
-    
-    # initialize variables for numerator and denominator
-    numerator = 0
-    denominator = 0
-    
-    # iterate over codon pairs and calculate CPS components
-    for codon_pair, count in codon_pairs.items():
-        codon_a, codon_b = codon_pair[:3], codon_pair[3:]
-        count_a = codon_freq[codon_a]
-        count_b = codon_freq[codon_b]
-        aa_a = codon_to_aa[codon_a]
-        aa_b = codon_to_aa[codon_b]
-        count_aa_pair = aa_counts[aa_a] * aa_counts[aa_b]
-        
-        # calculate CPS components and add to numerator and denominator
-        component = count / total_codon_pairs
-        expected_count = (count_a * count_b / count_aa_pair) * total_codon_pairs
-        numerator += component * log(count / expected_count)
-        denominator += component
-    
-    # calculate CPS
-    CPS = numerator / denominator
-    
-    return CPS
-
-
-# Codon Pair Bias (CPB)
-def CPB_calc(sequence: str) -> float:
-    # calculate CPS for each codon pair in the sequence
-    CPS_list = []
-    for i in range(0, len(sequence)-6, 3):
-        CPS = CPS_calc(sequence[i:i+6], codon_pairs, codon_freq, codon_to_aa)
-        if CPS is not None:
-            CPS_list.append(CPS)
-    
-    # calculate CPB
-    if len(CPS_list) == 0:
-        return None  # or raise an exception if appropriate
-    else:
-        CPB = sum(CPS_list) / ((len(sequence) - 6) / 3)
-        return CPB
-
-
+# print all the metrics results 
 print('RCA metric:', RCA_calc(sequence, seq_len))
 print('RCBS metric:', RCBS_calc(sequence, seq_len))
-print('CPS metric:', CPS_calc(sequence, codon_pairs, codon_freq, codon_to_aa))
-print('CPB metric:', CPB_calc(sequence))
+print('CPS/CPB metrics:', CPS.cpb(sequence))
 print('GC frequency metric:', GC_freq_calc())
 print('ARSCU metric:', ARSCU_calc(codons))
+print(len(sequence))
