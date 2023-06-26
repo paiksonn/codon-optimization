@@ -1,5 +1,5 @@
 # read the nucleotide sequence a.k.a. gene 
-with open("D:/Диплом/Sequences/Short/human il21 opt1.fa", 'r') as file:
+with open("D:/Диплом/Sequences/Short/article good codons bad transcript/AC_column.txt", 'r') as file:
     file.readline()
     lines = file.readlines()
 
